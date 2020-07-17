@@ -20,177 +20,177 @@ standard out.
 package main
 
 import (
-  "flag"
-  "os"
-  "io"
-  "strings"
-  "bytes"
-  "fmt"
-  "bufio"
-  "encoding/json"
-  jsonfilter "github.com/dschnare/jsonfilter/filter"
+	"bufio"
+	"bytes"
+	"encoding/json"
+	"flag"
+	"fmt"
+	"io"
+	jsonfilter "jsonfilter/filter"
+	"os"
+	"strings"
 )
 
 var (
-  jsontext string
-  // Flags
-  output string
-  help bool
-  filter string
-  prettyPrint bool
+	jsontext string
+	// Flags
+	output      string
+	help        bool
+	filter      string
+	prettyPrint bool
 )
 
 func usage() {
-  fmt.Fprintf(os.Stderr, "Usage: jsonfilter \"json to filter\" | jsonfilter [help|/?]\n")
-  flag.PrintDefaults()
+	fmt.Fprintf(os.Stderr, "Usage: jsonfilter \"json to filter\" | jsonfilter [help|/?]\n")
+	flag.PrintDefaults()
 }
 
 func init() {
-  const (
-    helpDefault = false
-    helpUsage = "Show the help message."
-    outputDefault = ""
-    outputUsage = "The output file to write to."
-    filterDefault = ""
-    filterUsage = "The filter(s) to apply to the strings contained in the JSON file."
-    prettyPrintDefault = false
-    prettyPrintUsage = "Print JSON result with indentation."
-  )
+	const (
+		helpDefault        = false
+		helpUsage          = "Show the help message."
+		outputDefault      = ""
+		outputUsage        = "The output file to write to."
+		filterDefault      = ""
+		filterUsage        = "The filter(s) to apply to the strings contained in the JSON file."
+		prettyPrintDefault = true
+		prettyPrintUsage   = "Print JSON result with indentation."
+	)
 
-  flag.Usage = usage
+	flag.Usage = usage
 
-  flag.BoolVar(&help, "help", helpDefault, helpUsage)
+	flag.BoolVar(&help, "help", helpDefault, helpUsage)
 
-  flag.BoolVar(&prettyPrint, "pretty-print", prettyPrintDefault, prettyPrintUsage)
-  flag.BoolVar(&prettyPrint, "pretty", prettyPrintDefault, prettyPrintUsage + " (shorthand)")
+	flag.BoolVar(&prettyPrint, "pretty-print", prettyPrintDefault, prettyPrintUsage)
+	flag.BoolVar(&prettyPrint, "pretty", prettyPrintDefault, prettyPrintUsage+" (shorthand)")
 
-  flag.StringVar(&filter, "filter", filterDefault, filterUsage)
+	flag.StringVar(&filter, "filter", filterDefault, filterUsage)
 
-  flag.StringVar(&output, "output", outputDefault, outputUsage)
+	flag.StringVar(&output, "output", outputDefault, outputUsage)
 
-  flag.Parse()
+	flag.Parse()
 
-  if help {
-    flag.Usage()
-    os.Exit(0)
-  } else if len(flag.Args()) == 1 && (flag.Arg(0) == "/?" || flag.Arg(0) == "help") {
-    flag.Usage()
-    os.Exit(0)
-  } else if len(flag.Args()) == 1 {
-    jsontext = flag.Arg(0)
-    if strings.HasSuffix(jsontext, ".json") {
-      file,err := os.Open(jsontext)
-      if err != nil {
-        fmt.Printf("Failed to read from file :: %v\n", err.Error())
-        os.Exit(1)
-      } else if jsontext,err = readFile(file); err != nil {
-        fmt.Printf("Failed to read from file :: %v\n", err.Error())
-        os.Exit(1)
-      }
-    }
-  } else {
-    if isPiped(os.Stdin) {
-      var err error
-      if jsontext,err = readFile(os.Stdin); err != nil {
-        fmt.Printf("Failed to read from stdin :: %v\n", err.Error())
-        os.Exit(1)
-      }
-    } else {
-      flag.Usage()
-      os.Exit(1)
-    }
-  }
+	if help {
+		flag.Usage()
+		os.Exit(0)
+	} else if len(flag.Args()) == 1 && (flag.Arg(0) == "/?" || flag.Arg(0) == "help") {
+		flag.Usage()
+		os.Exit(0)
+	} else if len(flag.Args()) == 1 {
+		jsontext = flag.Arg(0)
+		if strings.HasSuffix(jsontext, ".json") {
+			file, err := os.Open(jsontext)
+			if err != nil {
+				fmt.Printf("Failed to read from file :: %v\n", err.Error())
+				os.Exit(1)
+			} else if jsontext, err = readFile(file); err != nil {
+				fmt.Printf("Failed to read from file :: %v\n", err.Error())
+				os.Exit(1)
+			}
+		}
+	} else {
+		if isPiped(os.Stdin) {
+			var err error
+			if jsontext, err = readFile(os.Stdin); err != nil {
+				fmt.Printf("Failed to read from stdin :: %v\n", err.Error())
+				os.Exit(1)
+			}
+		} else {
+			flag.Usage()
+			os.Exit(1)
+		}
+	}
 
-  if len(filter) == 0 {
-    fmt.Println("Expected a filter to be specified.")
-    flag.Usage()
-    os.Exit(1)
-  }
+	if len(filter) == 0 {
+		fmt.Println("Expected a filter to be specified.")
+		flag.Usage()
+		os.Exit(1)
+	}
 }
 
 func main() {
-  if len(jsontext) == 0 {
-    return
-  }
+	if len(jsontext) == 0 {
+		return
+	}
 
-  if value,err := jsonfilter.FilterJsonFromText(jsontext, filter); err == nil {
-    if writer,err := createWriter(); err == nil {
-      if err := doWrite(writer, value); err != nil {
-        panic(err)
-      }
-    } else {
-      panic(err)
-    }
-  } else {
-    panic(err)
-  }
+	if value, err := jsonfilter.FilterJsonFromText(jsontext, filter); err == nil {
+		if writer, err := createWriter(); err == nil {
+			if err := doWrite(writer, value); err != nil {
+				panic(err)
+			}
+		} else {
+			panic(err)
+		}
+	} else {
+		panic(err)
+	}
 }
 
 func isPiped(file *os.File) bool {
-  if info,err := file.Stat(); err == nil {
-  return info.Mode() == os.ModeNamedPipe
-  }
-  return false
+	if info, err := file.Stat(); err == nil {
+		return info.Mode() == os.ModeNamedPipe
+	}
+	return false
 }
 
 func doWrite(writer *bufio.Writer, value interface{}) (err error) {
-  var(
-    b []byte
-  )
+	var (
+		b []byte
+	)
 
-  if prettyPrint {
-    if b,err = json.Marshal(value); err == nil {
-      var out bytes.Buffer
-      if err = json.Indent(&out, b, "", "  "); err == nil {
-        if _,err = out.WriteTo(writer); err == nil {
-          err = writer.Flush()
-        }
-      }
-    }
-  } else {
-    jsonEncoder := json.NewEncoder(writer)
-    if err = jsonEncoder.Encode(value); err == nil {
-      err = writer.Flush()
-    }
-  }
+	if prettyPrint {
+		if b, err = json.Marshal(value); err == nil {
+			var out bytes.Buffer
+			if err = json.Indent(&out, b, "", "  "); err == nil {
+				if _, err = out.WriteTo(writer); err == nil {
+					err = writer.Flush()
+				}
+			}
+		}
+	} else {
+		jsonEncoder := json.NewEncoder(writer)
+		if err = jsonEncoder.Encode(value); err == nil {
+			err = writer.Flush()
+		}
+	}
 
-  return
+	return
 }
 
 func createWriter() (*bufio.Writer, error) {
-  var writer *bufio.Writer
+	var writer *bufio.Writer
 
-  if len(output) == 0 || isPiped(os.Stdout) {
-    writer = bufio.NewWriter(os.Stdout)
-  } else if file,err := os.Create(output); err == nil {
-    writer = bufio.NewWriter(file)
-  } else {
-    return nil,err
-  }
+	if len(output) == 0 || isPiped(os.Stdout) {
+		writer = bufio.NewWriter(os.Stdout)
+	} else if file, err := os.Create(output); err == nil {
+		writer = bufio.NewWriter(file)
+	} else {
+		return nil, err
+	}
 
-  return writer,nil
+	return writer, nil
 }
 
 func readFile(file *os.File) (text string, err error) {
-  var (
-    buf bytes.Buffer
-    c byte
-  )
-  reader := bufio.NewReader(file)
+	var (
+		buf bytes.Buffer
+		c   byte
+	)
+	reader := bufio.NewReader(file)
 
-  for err == nil {
-    c,err = reader.ReadByte()
+	for err == nil {
+		c, err = reader.ReadByte()
 
-    if err == nil {
-      buf.WriteByte(c)
-    }
-  }
+		if err == nil {
+			buf.WriteByte(c)
+		}
+	}
 
-  if err == io.EOF {
-    err = nil
-  }
+	if err == io.EOF {
+		err = nil
+	}
 
-  text = buf.String()
+	text = buf.String()
 
-  return
+	return
 }
