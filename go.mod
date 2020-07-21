@@ -1,4 +1,4 @@
-module jsonfilter
+module github.com/digitapai/jsonfilter
 
 go 1.14
 

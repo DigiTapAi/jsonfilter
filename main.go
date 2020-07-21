@@ -26,7 +26,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	jsonfilter "jsonfilter/filter"
+	jsonfilter "github.com/digitapai/jsonfilter/filter"
 	"os"
 	"strings"
 )
