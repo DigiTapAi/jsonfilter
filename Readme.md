@@ -2,7 +2,15 @@
 
 # Overview
 
-Jsonfilter exposes a Go packge and a command line tool for filter string values found in JSON data.
+Jsonfilter exposes a Go packge and a command line tool for filter string values found in JSON data. Try: 
+
+```
+git clone <repo>
+cd <repo>
+go build
+./jsonfilter -filter test/data/t1.json test/data/input.json
+```
+
 
 # Usage
 

@@ -236,6 +236,7 @@ func commandLineFilterRunner(command string, value string) (result string, err e
 	cmd.Stdin = strings.NewReader(value)
 	cmd.Stdout = &out
 
+	// fmt.Println("+++++++++++++ ", command)
 	if err = cmd.Run(); err == nil {
 		result = out.String()
 	}
@@ -318,7 +319,9 @@ func loadFilters(filter string) (interface{}, error) {
 	if strings.HasSuffix(filter, ".json") {
 		return readJsonFromFile(filter)
 	} else {
-		return filter, nil
+		var ret interface{}
+		json.Unmarshal([]byte(filter), &ret)
+		return ret, nil
 	}
 }
 
@@ -347,7 +350,11 @@ func traverseMap(m map[string]interface{}, path string, visit visitorFunc) (valu
 		if err != nil {
 			delete(m, k)
 			continue
+		} else if m[k] == nil {
+			delete(m, k)
+			continue
 		}
+
 	}
 
 	value = m
@@ -368,14 +375,23 @@ func traverseSlice(s *[]interface{}, path string, visit visitorFunc) (value inte
 			idxToRemove = append(idxToRemove, k)
 			continue
 		}
+		if slice[k] == nil {
+			idxToRemove = append(idxToRemove, k)
+			continue
+		}
 	}
 
-	for _, k := range idxToRemove {
-		slice = append(slice[:k], slice[k+1:]...)
+	out := slice
+	removed := 0
+	for k, v := range slice {
+		if v == nil {
+			out = append(out[:(k-removed)], out[(k+1-removed):]...)
+			removed++
+		}
 	}
 
-	value = slice
-	if len(slice) == 0 {
+	value = out
+	if len(out) == 0 {
 		value = nil
 	}
 
